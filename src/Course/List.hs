@@ -237,8 +237,10 @@ flattenAgain =
 seqOptional ::
   List (Optional a)
   -> Optional (List a)
-seqOptional =
-  error "todo"
+seqOptional = foldRight f (Full Nil) 
+  where f _ Empty = Empty
+        f Empty _ = Empty
+        f (Full x) (Full xs) = Full (x :. xs)
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -260,8 +262,9 @@ find ::
   (a -> Bool)
   -> List a
   -> Optional a
-find =
-  error "todo"
+find m n = f2 ( filter  m n)
+  where f2 Nil = Empty
+        f2 (x :. xs) = Full x
 
 -- | Determine if the length of the given list is greater than 4.
 --
@@ -279,8 +282,8 @@ find =
 lengthGT4 ::
   List a
   -> Bool
-lengthGT4 =
-  error "todo"
+lengthGT4 = f3 . length
+  where f3 x = if x > 4 then True else False 
 
 -- | Reverse a list.
 --
@@ -296,8 +299,9 @@ lengthGT4 =
 reverse ::
   List a
   -> List a
-reverse =
-  error "todo"
+reverse l = rev l Nil
+  where rev Nil  a = a
+        rev (x:.xs) a  = rev xs  (x:.a)
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
@@ -311,8 +315,7 @@ produce ::
   (a -> a)
   -> a
   -> List a
-produce =
-  error "todo"
+produce f s = s :. produce f (f s)
 
 -- | Do anything other than reverse a list.
 -- Is it even possible?
