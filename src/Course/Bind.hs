@@ -63,7 +63,7 @@ infixr 1 =<<
   f (a -> b)
   -> f a
   -> f b
-(<*>) f a = (<$> a) =<< f 
+(<*>) f a = (<$> a) =<< f     -- Carefully follow the types! 
 
 infixl 4 <*>
 
