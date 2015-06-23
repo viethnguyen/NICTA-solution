@@ -62,8 +62,9 @@ the contents of c
 -- /Tip:/ use @getArgs@ and @run@
 main ::
   IO ()
-main =
-  error "todo"
+main = do
+  args <- getArgs
+  run $ headOr "file.txt" args
 
 type FilePath =
   Chars
@@ -72,31 +73,40 @@ type FilePath =
 run ::
   Chars
   -> IO ()
-run =
-  error "todo"
+run filename = do
+  content <- readFile filename
+  externalcontents <- getFiles $ lines content
+  printFiles externalcontents           
 
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo"
-
+getFiles 
+    = sequence . (<$>) getFile 
+  
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile =
-  error "todo"
-
+getFile filepath = do
+  contents <- readFile filepath
+  return $ (filepath, contents)              
+   
+{--
+ Note: uncurry :: (a->b->c) -> ((a,b)->c)
+converts a curried function a function on pairs 
+sequence :: Applicative f => List (f a) -> f (List a)
+ --}
+         
 printFiles ::
   List (FilePath, Chars)
   -> IO ()
 printFiles =
-  error "todo"
-
+    void . sequence .  (<$>) (uncurry printFile)
+    
 printFile ::
   FilePath
   -> Chars
   -> IO ()
-printFile =
-  error "todo"
-
+printFile filepath content = do
+  putStrLn  ("============ " ++ filepath) 
+  putStrLn  content
