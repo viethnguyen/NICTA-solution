@@ -76,8 +76,7 @@ instance Bind Id where
     (a -> Id b)
     -> Id a
     -> Id b
-  (=<<) =
-    error "todo"
+  (=<<) f (Id x) = f x
 
 -- | Binds a function on a List.
 --
@@ -88,8 +87,8 @@ instance Bind List where
     (a -> List b)
     -> List a
     -> List b
-  (=<<) =
-    error "todo"
+  (=<<) f (x :. xs) = (f x) ++ ((=<<) f xs)
+  (=<<) _ Nil = Nil                      
 
 -- | Binds a function on an Optional.
 --
@@ -100,8 +99,8 @@ instance Bind Optional where
     (a -> Optional b)
     -> Optional a
     -> Optional b
-  (=<<) =
-    error "todo"
+  (=<<) _ Empty = Empty
+  (=<<) f (Full x) = f x
 
 -- | Binds a function on the reader ((->) t).
 --
