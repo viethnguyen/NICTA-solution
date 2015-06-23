@@ -111,8 +111,7 @@ instance Bind ((->) t) where
     (a -> ((->) t b))
     -> ((->) t a)
     -> ((->) t b)
-  (=<<) =
-    error "todo"
+  (=<<) f g = (\x -> (f (g x) x))
 
 -- | Flattens a combined structure to a single structure.
 --
@@ -131,9 +130,8 @@ join ::
   Bind f =>
   f (f a)
   -> f a
-join =
-  error "todo"
-
+join x = id =<< x 
+  
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
 -- Pronounced, bind flipped.
@@ -145,8 +143,8 @@ join =
   f a
   -> (a -> f b)
   -> f b
-(>>=) =
-  error "todo"
+(>>=) x y = join ((<$>) y x)
+
 
 infixl 1 >>=
 
@@ -161,8 +159,8 @@ infixl 1 >>=
   -> (a -> f b)
   -> a
   -> f c
-(<=<) =
-  error "todo"
+(<=<)  x y z = (y z) >>= x 
+
 
 infixr 1 <=<
 
