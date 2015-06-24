@@ -29,3 +29,6 @@ TAGS
 
 *.swp
 
+# temp file
+*.hi
+*.o
