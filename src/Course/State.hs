@@ -41,8 +41,9 @@ instance Functor (State s) where
     (a -> b)
     -> State s a
     -> State s b
-  (<$>) =
-      error "todo"
+  (<$>) f s1 = State $ \s -> case runState s1 s of
+                               (a,s') -> (f a, s')
+
 
 -- | Implement the `Apply` instance for `State s`.
 -- >>> runState (pure (+1) <*> pure 0) 0
@@ -56,9 +57,10 @@ instance Apply (State s) where
     State s (a -> b)
     -> State s a
     -> State s b 
-  (<*>) =
-    error "todo"
-
+  (<*>) s1 s2 = State $ \s -> case runState s1 s of
+                                (f, s') -> case runState s2 s' of
+                                             (a, s'') -> (f a, s'')
+                                                         
 -- | Implement the `Applicative` instance for `State s`.
 -- >>> runState (pure 2) 0
 -- (2,0)
@@ -66,8 +68,8 @@ instance Applicative (State s) where
   pure ::
     a
     -> State s a
-  pure =
-    error "todo"
+  pure a = State $ \s -> (a,s)
+    
 
 -- | Implement the `Bind` instance for `State s`.
 -- >>> runState ((const $ put 2) =<< put 1) 0
@@ -77,8 +79,9 @@ instance Bind (State s) where
     (a -> State s b)
     -> State s a
     -> State s b
-  (=<<) =
-    error "todo"
+  (=<<) f s1 = State $ \s -> case runState s1 s of
+                               (a, s') -> case runState (f a) s' of
+                                            (b, s'') -> (b, s'')
 
 instance Monad (State s) where
 
@@ -89,8 +92,8 @@ exec ::
   State s a
   -> s
   -> s
-exec =
-  error "todo"
+exec s1 s = case runState s1 s of
+              (a, s') -> s'
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
@@ -99,8 +102,9 @@ eval ::
   State s a
   -> s
   -> a
-eval =
-  error "todo"
+eval s1 s = case runState s1 s of
+              (a, s') -> a
+
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -108,8 +112,7 @@ eval =
 -- (0,0)
 get ::
   State s s
-get =
-  error "todo"
+get = State $ \s -> (s,s)
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
@@ -118,8 +121,7 @@ get =
 put ::
   s
   -> State s ()
-put =
-  error "todo"
+put s = State $ \_ -> ((), s)
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.
@@ -140,8 +142,8 @@ findM ::
   (a -> f Bool)
   -> List a
   -> f (Optional a)
-findM =
-  error "todo"
+findM f (a :. as) = (f a) >>= (\b -> if b then pure (Full a) else findM f as)
+findM _ Nil = pure Empty
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
