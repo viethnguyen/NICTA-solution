@@ -60,8 +60,10 @@ instance Bind f => Apply (StateT s f) where
     StateT s f (a -> b)
     -> StateT s f a
     -> StateT s f b
-  (<*>) =
-      error "todo"
+  (<*>) st1 st2 = StateT $ \s ->
+                  runStateT st1 s >>= (\(f,s') ->
+                                         (\(v,s'') -> (f v, s'')) <$> runStateT st2 s')
+
                                     
 
 -- | Implement the `Applicative` instance for @StateT s f@ given a @Applicative f@.
