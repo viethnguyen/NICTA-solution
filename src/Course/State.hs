@@ -156,8 +156,7 @@ firstRepeat ::
   Ord a =>
   List a
   -> Optional a
-firstRepeat =
-  error "todo"
+firstRepeat l = let p x = (\s -> (const $ pure (S.member x s)) =<< put (S.insert x s)) =<< get in eval (findM p l)  S.empty 
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -169,8 +168,8 @@ distinct ::
   Ord a =>
   List a
   -> List a
-distinct =
-  error "todo"
+distinct l = let p x = (\s -> (const $ pure (S.notMember x s)) =<< put (S.insert x s)) =<< get in eval (filtering p l) S.empty
+
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
@@ -196,5 +195,10 @@ distinct =
 isHappy ::
   Integer
   -> Bool
-isHappy =
-  error "todo"
+isHappy x = contains 1 res
+     where res = firstRepeat l
+           l = produce nextInt (fromInteger x :: Int)
+           nextInt x = foldRight (+) 0 $ map (square . digitToInt) (listh $ show x)
+           square x = x * x
+
+
