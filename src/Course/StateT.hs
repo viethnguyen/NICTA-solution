@@ -90,8 +90,8 @@ instance Monad f => Bind (StateT s f) where
     (a -> StateT s f b)
     -> StateT s f a
     -> StateT s f b
-  (=<<) =
-    error "todo"
+  (=<<) f1 st = StateT $ \s ->
+                runStateT st s >>= (\(a,s') -> runStateT (f1 a) s')
 
 instance Monad f => Monad (StateT s f) where
 
@@ -106,8 +106,8 @@ type State' s a =
 state' ::
   (s -> (a, s))
   -> State' s a
-state' =
-  error "todo"
+state' f = StateT $ \s -> Id $ f s
+
 
 -- | Provide an unwrapper for `State'` values.
 --
@@ -117,8 +117,9 @@ runState' ::
   State' s a
   -> s
   -> (a, s)
-runState' =
-  error "todo"
+runState' st s = case runStateT st s of
+                   Id (a,s') -> (a,s')
+
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting state.
 execT ::
@@ -126,16 +127,18 @@ execT ::
   StateT s f a
   -> s
   -> f s
-execT =
-  error "todo"
+execT st s = case runStateT st s of
+               f -> snd <$> f 
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
 exec' ::
   State' s a
   -> s
   -> s
-exec' =
-  error "todo"
+exec' st s = case execT st s of
+               Id s' -> s'
+
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting value.
 evalT ::
@@ -143,16 +146,17 @@ evalT ::
   StateT s f a
   -> s
   -> f a
-evalT =
-  error "todo"
+evalT st s = case runStateT st s of
+               f -> fst <$> f 
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 eval' ::
   State' s a
   -> s
   -> a
-eval' =
-  error "todo"
+eval' st s = case evalT st s of
+               Id s' -> s'
 
 -- | A `StateT` where the state also distributes into the produced value.
 --
@@ -161,8 +165,8 @@ eval' =
 getT ::
   Monad f =>
   StateT s f s
-getT =
-  error "todo"
+getT = StateT  $ \s -> pure (s,s)
+    
 
 -- | A `StateT` where the resulting state is seeded with the given value.
 --
@@ -175,8 +179,8 @@ putT ::
   Monad f =>
   s
   -> StateT s f ()
-putT =
-  error "todo"
+putT s = StateT $ \_ -> pure $ ((), s)
+
 
 -- | Remove all duplicate elements in a `List`.
 --
@@ -187,8 +191,7 @@ distinct' ::
   (Ord a, Num a) =>
   List a
   -> List a
-distinct' =
-  error "todo"
+distinct' l = let p x = (\s -> (const $ pure (S.notMember x s)) =<< putT (S.insert x s)) =<< getT in eval' (filtering p l) S.empty
 
 -- | Remove all duplicate elements in a `List`.
 -- However, if you see a value greater than `100` in the list,
@@ -206,7 +209,8 @@ distinctF ::
   List a
   -> Optional (List a)
 distinctF =
-  error "todo"
+    error "todo"
+
 
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a =
