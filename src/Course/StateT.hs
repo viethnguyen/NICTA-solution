@@ -191,8 +191,9 @@ distinct' ::
   (Ord a, Num a) =>
   List a
   -> List a
-distinct' l = let p x = (\s -> (const $ pure (S.notMember x s)) =<< putT (S.insert x s)) =<< getT in eval' (filtering p l) S.empty
-
+distinct' l = let p x = StateT (\s -> Id (S.notMember x s, S.insert x s))
+              in eval' (filtering p l) S.empty
+                 
 -- | Remove all duplicate elements in a `List`.
 -- However, if you see a value greater than `100` in the list,
 -- abort the computation by producing `Empty`.
@@ -208,8 +209,10 @@ distinctF ::
   (Ord a, Num a) =>
   List a
   -> Optional (List a)
-distinctF =
-    error "todo"
+-- distinctF l = error "todo"
+distinctF l = let p x = StateT (\s ->
+                                if x > 100 then Empty else Full (S.notMember x s, S.insert x s))
+              in evalT (filtering p l) S.empty
 
 
 -- | An `OptionalT` is a functor of an `Optional` value.
@@ -224,8 +227,7 @@ data OptionalT f a =
 -- >>> runOptionalT $ (+1) <$> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty]
 instance Functor f => Functor (OptionalT f) where
-  (<$>) =
-    error "todo"
+    f <$> OptionalT x = OptionalT ((<$>) f <$> x)
 
 -- | Implement the `Apply` instance for `OptionalT f` given a Apply f.
 --
