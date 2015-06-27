@@ -209,7 +209,6 @@ distinctF ::
   (Ord a, Num a) =>
   List a
   -> Optional (List a)
--- distinctF l = error "todo"
 distinctF l = let p x = StateT (\s ->
                                 if x > 100 then Empty else Full (S.notMember x s, S.insert x s))
               in evalT (filtering p l) S.empty
@@ -234,22 +233,22 @@ instance Functor f => Functor (OptionalT f) where
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
 instance Apply f => Apply (OptionalT f) where
-  (<*>) =
-    error "todo"
+  OptionalT f <*> OptionalT x = OptionalT (lift2 (<*>) f x )
+
 
 -- | Implement the `Applicative` instance for `OptionalT f` given a Applicative f.
 instance Applicative f => Applicative (OptionalT f) where
-  pure =
-    error "todo"
+    pure = OptionalT . pure . pure
+
 
 -- | Implement the `Bind` instance for `OptionalT f` given a Monad f.
 --
 -- >>> runOptionalT $ (\a -> OptionalT (Full (a+1) :. Full (a+2) :. Nil)) =<< OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Full 3,Empty]
 instance Monad f => Bind (OptionalT f) where
-  (=<<) =
-    error "todo"
-
+  f =<< OptionalT x = OptionalT ((\o -> case o of
+                                          Empty -> pure Empty
+                                          Full a -> runOptionalT (f a)) =<< x)
 instance Monad f => Monad (OptionalT f) where
 
 -- | A `Logger` is a pair of a list of log values (`[l]`) and an arbitrary value (`a`).
@@ -262,24 +261,24 @@ data Logger l a =
 -- >>> (+3) <$> Logger (listh [1,2]) 3
 -- Logger [1,2] 6
 instance Functor (Logger l) where
-  (<$>) =
-    error "todo"
-
+--  (<$>) =
+--    error "todo"
+  f <$> Logger l x = Logger l (f x)
+                     
 -- | Implement the `Apply` instance for `Logger`.
 --
 -- >>> Logger (listh [1,2]) (+7) <*> Logger (listh [3,4]) 3
 -- Logger [1,2,3,4] 10
 instance Apply (Logger l) where
-  (<*>) =
-    error "todo"
-
+  Logger l1 f <*> Logger l2 x = Logger (l1 ++ l2) (f x)
+                                
 -- | Implement the `Applicative` instance for `Logger`.
 --
 -- >>> pure "table" :: Logger Int P.String
 -- Logger [] "table"
 instance Applicative (Logger l) where
-  pure =
-    error "todo"
+  pure x = Logger Nil x 
+
 
 -- | Implement the `Bind` instance for `Logger`.
 -- The `bind` implementation must append log values to maintain associativity.
@@ -287,8 +286,8 @@ instance Applicative (Logger l) where
 -- >>> (\a -> Logger (listh [4,5]) (a+3)) =<< Logger (listh [1,2]) 3
 -- Logger [1,2,4,5] 6
 instance Bind (Logger l) where
-  (=<<) =
-    error "todo"
+  f =<< Logger l x = let Logger l' b = f x in Logger (l++l') b
+
 
 instance Monad (Logger l) where
 
@@ -300,8 +299,8 @@ log1 ::
   l
   -> a
   -> Logger l a
-log1 =
-  error "todo"
+log1 l a = Logger (listh [l]) a
+
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
@@ -321,5 +320,12 @@ distinctG ::
   (Integral a, Show a) =>
   List a
   -> Logger Chars (Optional (List a))
-distinctG =
-  error "todo"
+distinctG l =
+    runOptionalT (evalT (filtering (\a -> StateT (\s ->
+                                                 OptionalT (if a > 100
+                                                            then
+                                                                log1 (fromString ("aborting > 100: " P.++ show a)) Empty
+                                                            else (if even a
+                                                                  then
+                                                                      log1 (fromString ("evenNumber: " P.++ show a))
+                                                                  else pure) (Full (a `S.notMember` s, a `S.insert` s))))) l) S.empty)
