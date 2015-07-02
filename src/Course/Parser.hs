@@ -79,8 +79,8 @@ unexpectedCharParser c =
 valueParser ::
   a
   -> Parser a
-valueParser =
-  error "todo"
+valueParser c = P (\x-> Result x c )
+
 
 -- | Return a parser that always fails with the given error.
 --
@@ -89,7 +89,7 @@ valueParser =
 failed ::
   Parser a
 failed =
-  error "todo"
+    P (\_ -> ErrorResult Failed)
 
 -- | Return a parser that succeeds with a character off the input or fails with an error if the input is empty.
 --
@@ -101,8 +101,9 @@ failed =
 character ::
   Parser Char
 character =
-  error "todo"
-
+    P (\input -> case input of
+                   x :. xs -> Result xs x
+                   Nil -> ErrorResult Failed)
 -- | Return a parser that maps any succeeding result with the given function.
 --
 -- >>> parse (mapParser succ character) "amz"
@@ -114,8 +115,9 @@ mapParser ::
   (a -> b)
   -> Parser a
   -> Parser b
-mapParser =
-  error "todo"
+mapParser f p = P (\x -> case parse p x of
+                           Result input x -> Result input (f x)
+                           ErrorResult e -> ErrorResult e)
 
 -- | This is @mapParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
@@ -151,8 +153,10 @@ bindParser ::
   (a -> Parser b)
   -> Parser a
   -> Parser b
-bindParser =
-  error "todo"
+bindParser f p = P (\input -> case parse p input of
+                            Result input' x -> parse (f x) input'
+                            ErrorResult x -> ErrorResult x)
+
 
 -- | This is @bindParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
@@ -181,8 +185,9 @@ flbindParser =
   Parser a
   -> Parser b
   -> Parser b
-(>>>) =
-  error "todo"
+(>>>) p1 p2 = P (\input -> case parse p1 input of
+                           Result input' x -> parse p2 input'
+                           ErrorResult x -> ErrorResult x)
 
 -- | Return a parser that tries the first parser for a successful value.
 --
@@ -205,8 +210,10 @@ flbindParser =
   Parser a
   -> Parser a
   -> Parser a
-(|||) =
-  error "todo"
+(|||) p1 p2 = P (\input -> case parse p1 input of
+                             Result input' x -> Result input' x
+                             ErrorResult x -> parse p2 input)
+                                              
 
 infixl 3 |||
 
