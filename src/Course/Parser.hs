@@ -281,8 +281,8 @@ list1 k = flbindParser k (\k' ->
 satisfy ::
   (Char -> Bool)
   -> Parser Char
-satisfy =
-  error "todo"
+satisfy p = bindParser (\c ->
+                            if p c then valueParser c else unexpectedCharParser c) character
 
 -- | Return a parser that produces the given character but fails if
 --
@@ -293,8 +293,8 @@ satisfy =
 -- /Tip:/ Use the @satisfy@ function.
 is ::
   Char -> Parser Char
-is =
-  error "todo"
+is c = satisfy (== c)
+
 
 -- | Return a parser that produces a character between '0' and '9' but fails if
 --
@@ -305,8 +305,8 @@ is =
 -- /Tip:/ Use the @satisfy@ and @Data.Char#isDigit@ functions.
 digit ::
   Parser Char
-digit =
-  error "todo"
+digit = satisfy isDigit
+
 
 -- | Return a parser that produces zero or a positive integer but fails if
 --
@@ -329,8 +329,9 @@ digit =
 -- True
 natural ::
   Parser Int
-natural =
-  error "todo"
+natural = bindParser (\l -> case read l of Empty -> failed
+                                           Full h -> valueParser h) (list digit)
+
 
 --
 -- | Return a parser that produces a space character but fails if
@@ -343,7 +344,7 @@ natural =
 space ::
   Parser Char
 space =
-  error "todo"
+    satisfy isSpace
 
 -- | Return a parser that produces one or more space characters
 -- (consuming until the first non-space) but fails if
@@ -356,7 +357,7 @@ space =
 spaces1 ::
   Parser Chars
 spaces1 =
-  error "todo"
+    list1 space
 
 -- | Return a parser that produces a lower-case character but fails if
 --
@@ -368,7 +369,7 @@ spaces1 =
 lower ::
   Parser Char
 lower =
-  error "todo"
+    satisfy isLower
 
 -- | Return a parser that produces an upper-case character but fails if
 --
@@ -380,7 +381,7 @@ lower =
 upper ::
   Parser Char
 upper =
-  error "todo"
+    satisfy isUpper
 
 -- | Return a parser that produces an alpha character but fails if
 --
@@ -392,7 +393,7 @@ upper =
 alpha ::
   Parser Char
 alpha =
-  error "todo"
+    satisfy isAlpha
 
 -- | Return a parser that sequences the given list of parsers by producing all their results
 -- but fails on the first failing parser of the list.
@@ -408,8 +409,11 @@ alpha =
 sequenceParser ::
   List (Parser a)
   -> Parser (List a)
-sequenceParser =
-  error "todo"
+sequenceParser Nil = valueParser Nil
+sequenceParser (h:.t) = flbindParser h (\a ->
+                                        flbindParser (sequenceParser t )(\as ->
+                                                                        valueParser (a:.as)))
+
 
 -- | Return a parser that produces the given number of values off the given parser.
 -- This parser fails if the given parser fails in the attempt to produce the given number of values.
@@ -425,8 +429,7 @@ thisMany ::
   Int
   -> Parser a
   -> Parser (List a)
-thisMany =
-  error "todo"
+thisMany x p  = sequenceParser (replicate x p)
 
 -- | Write a parser for Person.age.
 --
@@ -444,8 +447,8 @@ thisMany =
 -- True
 ageParser ::
   Parser Int
-ageParser =
-  error "todo"
+ageParser = natural
+
 
 -- | Write a parser for Person.firstName.
 -- /First Name: non-empty string that starts with a capital letter and is followed by zero or more lower-case letters/
@@ -459,8 +462,9 @@ ageParser =
 -- True
 firstNameParser ::
   Parser Chars
-firstNameParser =
-  error "todo"
+firstNameParser = flbindParser upper (\c ->
+                                     flbindParser (list lower) (\cs ->
+                                                               valueParser (c:.cs)))
 
 -- | Write a parser for Person.surname.
 --
@@ -478,8 +482,16 @@ firstNameParser =
 -- True
 surnameParser ::
   Parser Chars
-surnameParser =
-  error "todo"
+surnameParser = flbindParser upper (\c ->
+                                   flbindParser (thisMany 5 lower) (\cs ->
+                                                                   flbindParser (list lower) (\cs' ->
+                                                                                             valueParser (c:.cs ++ cs'))))
+-- surnameParser = do
+--  c <- upper
+--  cs <- thisMany 5 lower
+--  cs' <- list lower
+--  valueParser (c:.cs ++ cs')
+
 
 -- | Write a parser for Person.smoker.
 --
@@ -497,8 +509,9 @@ surnameParser =
 -- True
 smokerParser ::
   Parser Char
-smokerParser =
-  error "todo"
+smokerParser = is 'y' ||| is 'n'
+               
+
 
 -- | Write part of a parser for Person#phoneBody.
 -- This parser will only produce a string of digits, dots or hyphens.
@@ -520,8 +533,8 @@ smokerParser =
 phoneBodyParser ::
   Parser Chars
 phoneBodyParser =
-  error "todo"
-
+    list (digit ||| is '.' ||| is '-')
+         
 -- | Write a parser for Person.phone.
 --
 -- /Phone: ... but must start with a digit and end with a hash (#)./
@@ -542,7 +555,9 @@ phoneBodyParser =
 phoneParser ::
   Parser Chars
 phoneParser =
-  error "todo"
+    flbindParser digit (\d ->
+                       flbindParser phoneBodyParser (\pb ->
+                                                    flbindParser (is '#') (\_ ->  valueParser (d:.pb))))
 
 -- | Write a parser for Person.
 --
@@ -590,8 +605,7 @@ phoneParser =
 -- Result > rest< Person {age = 123, firstName = "Fred", surname = "Clarkson", smoker = 'y', phone = "123-456.789"}
 personParser ::
   Parser Person
-personParser =
-  error "todo"
+personParser = error "todo"
 
 -- Make sure all the tests pass!
 
