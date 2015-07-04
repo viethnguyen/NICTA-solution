@@ -253,8 +253,10 @@ betweenCharTok c1 c2 p= between (charTok c1) (charTok c2) p
 -- True
 hex ::
   Parser Char
-hex =
-  error "todo"
+hex = let hInt s = case readHex s of
+                     Empty -> 0
+                     Full n -> n
+      in chr . hInt <$> replicateA 4 (satisfy isHexDigit)
 
 -- | Write a function that parses the character 'u' followed by 4 hex digits and return the character value.
 --
@@ -276,8 +278,10 @@ hex =
 -- True
 hexu ::
   Parser Char
-hexu =
-  error "todo"
+hexu = do
+  is 'u'
+  hex
+
 
 -- | Write a function that produces a non-empty list of values coming off the given parser (which must succeed at least once),
 -- separated by the second given parser.
@@ -299,8 +303,11 @@ sepby1 ::
   Parser a
   -> Parser s
   -> Parser (List a)
-sepby1 =
-  error "todo"
+sepby1 p1 p2 = do
+   v <- p1
+   u <- list (p2 *> p1)
+   pure (v :. u)
+   
 
 -- | Write a function that produces a list of values coming off the given parser,
 -- separated by the second given parser.
@@ -322,8 +329,8 @@ sepby ::
   Parser a
   -> Parser s
   -> Parser (List a)
-sepby =
-  error "todo"
+sepby p1 p2 = sepby1 p1 p2 ||| valueParser Nil
+
 
 -- | Write a parser that asserts that there is no remaining input.
 --
@@ -334,8 +341,10 @@ sepby =
 -- True
 eof ::
   Parser ()
-eof =
-  error "todo"
+eof = P (\input -> case input of
+                     Nil -> Result Nil ()
+                     x :. xs -> ErrorResult (ExpectedEof input))
+
 
 -- | Write a parser that produces a characer that satisfies all of the given predicates.
 --
@@ -358,8 +367,8 @@ eof =
 satisfyAll ::
   List (Char -> Bool)
   -> Parser Char
-satisfyAll =
-  error "todo"
+satisfyAll ps = satisfy (and . sequence ps)
+
 
 -- | Write a parser that produces a characer that satisfies any of the given predicates.
 --
@@ -379,8 +388,8 @@ satisfyAll =
 satisfyAny ::
   List (Char -> Bool)
   -> Parser Char
-satisfyAny =
-  error "todo"
+satisfyAny ps = satisfy (or . sequence ps)
+
 
 -- | Write a parser that parses between the two given characters, separated by a comma character ','.
 --
@@ -408,5 +417,6 @@ betweenSepbyComma ::
   -> Char
   -> Parser a
   -> Parser (List a)
-betweenSepbyComma =
-  error "todo"
+betweenSepbyComma c1 c2 p = betweenCharTok c1 c2 (sepby p (charTok ','))
+
+
