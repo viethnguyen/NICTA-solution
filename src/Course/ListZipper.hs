@@ -668,7 +668,7 @@ instance Extend MaybeListZipper where
 -- >>> copure (zipper [2,1] 3 [4,5])
 -- 3
 instance Comonad ListZipper where
-  copure (ListZipper _ c _ ) = c
+    copure (ListZipper _ c _ ) = c
 
 
 -- | Implement the `Traversable` instance for `ListZipper`.
@@ -681,7 +681,7 @@ instance Comonad ListZipper where
 -- >>> traverse id (zipper [Full 1, Full 2, Full 3] (Full 4) [Empty, Full 6, Full 7])
 -- Empty
 instance Traversable ListZipper where
-  traverse f (ListZipper l c r) = (ListZipper . reverse) <$> traverse f (reverse l) <*> f c <*> traverse f r
+    traverse f (ListZipper l c r) = (ListZipper . reverse) <$> traverse f (reverse l) <*> f c <*> traverse f r
 
 
 -- | Implement the `Traversable` instance for `MaybeListZipper`.
